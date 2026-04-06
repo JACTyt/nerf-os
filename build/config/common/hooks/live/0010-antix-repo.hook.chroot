@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Adding antiX 26 repository for runit packages"
+
+# antiX 26 is based on Debian Trixie
+ANTIX_REPO="deb http://repo.antixlinux.com/antix26 trixie main"
+ANTIX_KEY_URL="http://repo.antixlinux.com/antix26/antix26-archive-keyring.gpg"
+
+# Add keyring
+curl -fsSL "$ANTIX_KEY_URL" -o /usr/share/keyrings/antix26-archive-keyring.gpg
+
+# Add repo (pinned lower priority than Debian)
+echo "$ANTIX_REPO" > /etc/apt/sources.list.d/antix26.list
+cat > /etc/apt/preferences.d/antix26 << 'EOF'
+Package: *
+Pin: origin repo.antixlinux.com
+Pin-Priority: 100
+EOF
+
+apt-get update
+echo "==> antiX 26 repo added"

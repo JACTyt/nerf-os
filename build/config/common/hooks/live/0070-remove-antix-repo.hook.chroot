@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Removing antiX 26 repository (packages already installed)"
+rm -f /etc/apt/sources.list.d/antix26.list
+rm -f /etc/apt/preferences.d/antix26
+rm -f /usr/share/keyrings/antix26-archive-keyring.gpg
+apt-get update
+echo "==> antiX repo removed"
