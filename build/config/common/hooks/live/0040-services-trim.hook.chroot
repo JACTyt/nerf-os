@@ -1,0 +1,33 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Trimming unnecessary services and packages"
+
+# Remove packages that pull in heavy dependencies
+for pkg in \
+  modemmanager \
+  cups cups-daemon \
+  avahi-daemon \
+  bluetooth bluez \
+  whoopsie \
+  apport \
+  packagekit; do
+  apt-get remove -y --purge "$pkg" 2>/dev/null || true
+done
+
+apt-get autoremove -y 2>/dev/null || true
+
+# Set I/O scheduler based on device type
+# Applied at boot via udev rule
+cat > /etc/udev/rules.d/60-nerfo-scheduler.rules << 'EOF'
+# NerfOS I/O scheduler tuning
+# HDD: mq-deadline (best for sequential reads on spinning rust)
+# SSD: none (no scheduler overhead)
+ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", \
+  ATTR{queue/scheduler}="mq-deadline"
+ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="0", \
+  ATTR{queue/scheduler}="none"
+ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
+EOF
+
+echo "==> Services trim complete"
