@@ -1,0 +1,27 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableCrashReporter": true,
+    "HardwareAcceleration": false,
+    "Preferences": {
+      "browser.cache.memory.capacity": {
+        "Value": 131072,
+        "Status": "locked"
+      },
+      "webgl.disabled": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "browser.sessionstore.interval": {
+        "Value": 60000,
+        "Status": "locked"
+      },
+      "browser.tabs.unloadOnLowMemory": {
+        "Value": true,
+        "Status": "locked"
+      }
+    }
+  }
+}

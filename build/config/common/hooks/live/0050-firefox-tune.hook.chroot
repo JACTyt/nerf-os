@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Applying Firefox policies"
+
+# Install policies.json to Firefox distribution directory
+FF_DIST="/usr/lib/firefox-esr/distribution"
+mkdir -p "$FF_DIST"
+cp /usr/share/nerf-os/firefox/policies.json "$FF_DIST/policies.json"
+
+# Configure nerf-optim to run at first boot via runit stage 1
+cat > /etc/runit/1.d/20-nerf-optim << 'EOF'
+#!/bin/bash
+if [ ! -f /etc/nerf-os/hardware-profile ]; then
+  /usr/local/bin/nerf-optim 2>/var/log/nerf-optim.log || true
+fi
+EOF
+chmod +x /etc/runit/1.d/20-nerf-optim
+
+echo "==> Firefox tuning applied"
