@@ -1,0 +1,2 @@
+LB_ARCHITECTURE="i386"
+LB_LINUX_PACKAGES="linux-image-686-pae linux-headers-686-pae"

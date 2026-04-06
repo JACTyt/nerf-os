@@ -1,0 +1,42 @@
+# Base packages — installed in all modes
+# Init and session
+runit
+runit-init
+elogind
+libpam-elogind
+
+# Network
+network-manager
+wpasupplicant
+
+# Firewall
+ufw
+
+# System tools
+bash
+busybox-syslogd
+util-linux
+procps
+psmisc
+less
+file
+
+# Compression
+zip
+unzip
+xz-utils
+
+# Hardware support
+firmware-linux-free
+firmware-linux-nonfree
+firmware-iwlwifi
+firmware-atheros
+firmware-realtek
+usbutils
+pciutils
+
+# zram
+zram-tools
+
+# Fonts (minimal)
+fonts-dejavu-core

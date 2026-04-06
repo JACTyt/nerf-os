@@ -1,0 +1,49 @@
+# GUI mode packages
+# Display server
+xorg
+xserver-xorg-video-all
+xserver-xorg-input-all
+
+# Window manager
+openbox
+obconf
+
+# Panel
+tint2
+
+# Display manager
+lightdm
+lightdm-gtk-greeter
+
+# File manager
+pcmanfm
+
+# Terminal
+lxterminal
+
+# Text editor
+mousepad
+
+# Image viewer
+gpicview
+
+# Archive manager
+file-roller
+
+# Network applet
+network-manager-gnome
+
+# Browsers
+firefox-esr
+midori
+
+# GTK theme (minimal)
+gtk2-engines-murrine
+adwaita-icon-theme
+
+# Fonts
+fonts-liberation
+fonts-freefont-ttf
+
+# Sound (ALSA only — no PulseAudio)
+alsa-utils
