@@ -1,0 +1,4 @@
+#!/bin/sh
+# Wait for dbus
+sv check dbus >/dev/null 2>&1 || sleep 2
+exec /usr/sbin/NetworkManager --no-daemon 2>&1

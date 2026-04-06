@@ -1,0 +1,30 @@
+#!/bin/bash
+# Reads nerf.mode= kernel parameter and activates the correct service set.
+# Called from runit stage 2 before runsvdir starts.
+
+DEFAULT_MODE="gui"
+RUNSVDIR_BASE="/etc/runit/runsvdir"
+DEFAULT_LINK="/etc/runit/runsvdir/default"
+
+# Read kernel cmdline
+CMDLINE=$(cat /proc/cmdline 2>/dev/null || echo "")
+MODE="$DEFAULT_MODE"
+
+for param in $CMDLINE; do
+  case "$param" in
+    nerf.mode=gui)      MODE="gui" ;;
+    nerf.mode=terminal) MODE="terminal" ;;
+  esac
+done
+
+# Remove old default symlink if present
+rm -f "$DEFAULT_LINK"
+
+# Activate selected mode
+if [ -d "$RUNSVDIR_BASE/$MODE" ]; then
+  ln -sf "$RUNSVDIR_BASE/$MODE" "$DEFAULT_LINK"
+  echo "NerfOS: boot mode = $MODE"
+else
+  echo "NerfOS: WARNING — mode directory '$MODE' not found, falling back to gui"
+  ln -sf "$RUNSVDIR_BASE/gui" "$DEFAULT_LINK"
+fi

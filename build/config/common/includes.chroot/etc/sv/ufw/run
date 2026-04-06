@@ -1,0 +1,5 @@
+#!/bin/sh
+# ufw is not a daemon — apply rules once and exit
+/usr/sbin/ufw --force enable
+# Keep sv happy by sleeping (oneshot-style)
+exec sleep infinity

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Restore ALSA state and stay running
+/usr/sbin/alsactl restore 2>/dev/null || true
+exec sleep infinity

@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Creating runit service symlinks"
+
+# GUI mode: all services
+GUI="/etc/runit/runsvdir/gui"
+mkdir -p "$GUI"
+for svc in dbus NetworkManager ufw busybox-syslog lightdm alsa; do
+  ln -sf "/etc/sv/$svc" "$GUI/$svc"
+done
+
+# Terminal mode: core services only (no display manager or sound)
+TERM_DIR="/etc/runit/runsvdir/terminal"
+mkdir -p "$TERM_DIR"
+for svc in dbus NetworkManager ufw busybox-syslog; do
+  ln -sf "/etc/sv/$svc" "$TERM_DIR/$svc"
+done
+
+echo "==> Service symlinks created"
