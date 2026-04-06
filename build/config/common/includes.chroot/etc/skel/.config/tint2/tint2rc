@@ -1,0 +1,75 @@
+# NerfOS tint2 panel config
+# Minimal bottom panel: taskbar + clock + system tray
+
+# --- Panel ---
+panel_items = TSC
+panel_position = bottom center horizontal
+panel_size = 100% 28
+panel_margin = 0 0
+panel_padding = 2 0 2
+panel_background_id = 1
+wm_menu = 0
+panel_dock = 0
+panel_layer = bottom
+panel_monitor = all
+primary_monitor_first = 0
+disable_transparency = 1
+mouse_effects = 0
+
+# --- Taskbar ---
+taskbar_mode = single_desktop
+taskbar_padding = 0 3 2
+taskbar_background_id = 0
+taskbar_active_background_id = 0
+taskbar_name = 0
+taskbar_hide_inactive_tasks = 0
+taskbar_sort_order = title
+task_text = 1
+task_icon = 1
+task_centered = 1
+task_maximum_size = 150 35
+task_padding = 6 3
+task_background_id = 2
+task_active_background_id = 3
+task_font = Sans 8
+task_font_color = #cccccc 100
+task_active_font_color = #ffffff 100
+urgent_nb_of_blink = 8
+
+# --- Clock ---
+time1_format = %H:%M
+time2_format = %a %d %b
+time1_font = Sans Bold 9
+time2_font = Sans 7
+clock_font_color = #eeeeee 100
+clock_padding = 6 0
+clock_background_id = 0
+clock_tooltip = %A %d %B %Y
+
+# --- System tray ---
+systray_padding = 0 4 4
+systray_background_id = 0
+systray_sort = ascending
+systray_icon_size = 16
+systray_icon_asb = 100 0 0
+systray_monitor = 1
+systray_name_filter =
+
+# --- Backgrounds ---
+# 1: panel background
+rounded = 0
+border_width = 0
+background_color = #1a1a1a 90
+border_color = #333333 50
+
+# 2: inactive task
+rounded = 3
+border_width = 0
+background_color = #333333 60
+border_color = #444444 40
+
+# 3: active task
+rounded = 3
+border_width = 0
+background_color = #555555 80
+border_color = #888888 60

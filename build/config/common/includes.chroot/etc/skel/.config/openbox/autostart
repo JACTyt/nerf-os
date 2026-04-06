@@ -1,0 +1,11 @@
+# NerfOS Openbox autostart
+# Launch panel
+tint2 &
+
+# Set wallpaper (solid dark grey — no image dependency)
+xsetroot -solid "#2b2b2b" &
+
+# Restore screen settings
+xset s off &           # disable screensaver
+xset -dpms &           # disable power management (user controls this)
+xset r rate 300 30 &   # keyboard repeat rate
