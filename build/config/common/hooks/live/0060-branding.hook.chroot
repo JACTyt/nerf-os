@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+VERSION="1.0"
+
+echo "==> Applying NerfOS branding"
+
+# OS release
+cat > /etc/os-release << EOF
+NAME="NerfOS"
+VERSION="$VERSION"
+ID=nerfo-os
+ID_LIKE=debian
+PRETTY_NAME="NerfOS $VERSION"
+VERSION_ID="$VERSION"
+HOME_URL="https://github.com/legion/nerf-os"
+EOF
+
+# Version file
+mkdir -p /etc/nerf-os
+echo "$VERSION" > /etc/nerf-os/version
+
+# Issue (shown at TTY login)
+cat > /etc/issue << EOF
+
+NerfOS $VERSION — Old PC Revival OS
+Login: user / Password: live
+
+EOF
+
+# Hostname
+echo "nerfo" > /etc/hostname
+cat > /etc/hosts << EOF
+127.0.0.1   localhost
+127.0.1.1   nerfo
+EOF
+
+echo "==> Branding applied"
