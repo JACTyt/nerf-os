@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "==> Configuring zram"
+
+apt-get install -y zram-tools
+
+# Configure zramswap: 50% of RAM, lz4 algorithm
+cat > /etc/default/zramswap << 'EOF'
+# NerfOS zram configuration
+# Algorithm: lz4 — fastest with good compression ratio
+ALGO=lz4
+# Size as percentage of total RAM
+PERCENT=50
+# Priority higher than disk swap
+PRIORITY=100
+EOF
+
+# Enable zramswap at boot via runit stage 1
+cat > /etc/runit/1.d/10-zram << 'EOF'
+#!/bin/bash
+# Start zram before any user processes
+if [ -f /etc/default/zramswap ]; then
+  source /etc/default/zramswap
+  TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  ZRAM_SIZE_KB=$(( TOTAL_RAM_KB * PERCENT / 100 ))
+  modprobe zram 2>/dev/null || true
+  echo "$ALGO" > /sys/block/zram0/comp_algorithm 2>/dev/null || true
+  echo "${ZRAM_SIZE_KB}K" > /sys/block/zram0/disksize 2>/dev/null || true
+  mkswap /dev/zram0 2>/dev/null || true
+  swapon -p "$PRIORITY" /dev/zram0 2>/dev/null || true
+  echo "zram: activated ${ZRAM_SIZE_KB}K swap (${ALGO})"
+fi
+EOF
+chmod +x /etc/runit/1.d/10-zram
+
+echo "==> zram configured"
