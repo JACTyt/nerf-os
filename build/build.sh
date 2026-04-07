@@ -28,6 +28,12 @@ if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "i686" ]; then
   exit 1
 fi
 
+# Map to Debian architecture names used by live-build
+case "$ARCH" in
+  x86_64) DEB_ARCH="amd64" ;;
+  i686)   DEB_ARCH="i386"  ;;
+esac
+
 if [ "$(id -u)" -ne 0 ]; then
   echo "Error: build.sh must be run as root (required by live-build/debootstrap)."
   exit 1
@@ -57,7 +63,7 @@ cp -r "$BUILD_DIR/bootloaders/grub" config/bootloaders/ 2>/dev/null || true
 
 # Set architecture
 lb config \
-  --architecture "$ARCH" \
+  --architecture "$DEB_ARCH" \
   --distribution trixie \
   --archive-areas "main contrib non-free non-free-firmware" \
   --debian-installer none \
