@@ -33,7 +33,7 @@ test_no_swap_high_ram() {
 
 test_validate_disk_rejects_empty() {
   local result
-  result=$(validate_disk_input "" 2>&1)
+  result=$(validate_disk_input "" 2>&1) || true
   assert_contains "$result" "Error" "empty disk input rejected"
 }
 
