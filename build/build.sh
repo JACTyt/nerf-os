@@ -41,12 +41,15 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 cd "$WORK_DIR"
 
-# Copy live-build config
-cp -r "$BUILD_DIR/config" .
+# live-build expects: config/package-lists/, config/hooks/,
+# config/includes.chroot/ directly under config/ — not under config/common/.
+# Flatten build/config/common/ into config/.
+mkdir -p config
+cp -r "$BUILD_DIR/config/common/." config/
 
-# Merge arch-specific overrides
-if [ -d "$BUILD_DIR/config/$ARCH" ]; then
-  cp -r "$BUILD_DIR/config/$ARCH/." config/
+# Place arch-specific lb config vars as config/common (a file, not a dir)
+if [ -f "$BUILD_DIR/config/$ARCH/common" ]; then
+  cp "$BUILD_DIR/config/$ARCH/common" config/common
 fi
 
 # Copy bootloader configs
