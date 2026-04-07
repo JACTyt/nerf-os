@@ -72,6 +72,7 @@ lb config \
   --mirror-binary "http://deb.debian.org/debian/" \
   --mirror-binary-security "http://security.debian.org/debian-security/" \
   --debootstrap-options "--exclude=systemd,systemd-sysv" \
+  --apt-options "-o APT::Install-Recommends=false" \
   --debian-installer none \
   --memtest none \
   --bootappend-live "boot=live quiet splash" \

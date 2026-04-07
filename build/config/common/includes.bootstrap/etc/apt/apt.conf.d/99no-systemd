@@ -1,0 +1,14 @@
+// Block systemd packages during bootstrap
+// This configuration is active during debootstrap
+
+APT::Install-Recommends "false";
+APT::Install-Suggests "false";
+
+// Pin systemd packages to negative priority so they're never installed
+Package: systemd;
+Pin: release *
+Pin-Priority: -1;
+
+Package: systemd-sysv;
+Pin: release *
+Pin-Priority: -1;

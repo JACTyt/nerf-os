@@ -1,0 +1,51 @@
+#!/bin/bash
+# CRITICAL: Block systemd packages BEFORE any package installation
+# This hook runs at the start of the chroot stage, before package lists are processed.
+
+set -euo pipefail
+
+echo "==> NORMAL HOOK 0000: Starting systemd blocking" | tee /dev/stderr
+
+# First, update apt cache
+apt-get update 2>&1 | tail -3
+
+# Create apt preferences to block systemd
+mkdir -p /etc/apt/preferences.d
+cat > /etc/apt/preferences.d/no-systemd << 'PREF'
+Package: systemd
+Pin: release *
+Pin-Priority: -1
+
+Package: systemd-sysv
+Pin: release *
+Pin-Priority: -1
+
+Package: live-config-systemd
+Pin: release *
+Pin-Priority: -1
+PREF
+
+echo "==> NORMAL HOOK 0000: Preferences created" | tee /dev/stderr
+
+# Check if systemd-sysv is installed
+if dpkg -l | grep -q '^ii  systemd-sysv'; then
+    echo "==> NORMAL HOOK 0000: systemd-sysv detected, removing..." | tee /dev/stderr
+
+    # Install runit-init first to provide 'init' virtual package
+    apt-get update
+    if ! apt-get install -y runit-init 2>&1; then
+        echo "==> NORMAL HOOK 0000: Could not install runit-init, trying force..." | tee /dev/stderr
+    fi
+
+    # Now remove systemd-sysv
+    apt-get remove -y --purge systemd-sysv systemd 2>&1 | tee /dev/stderr || {
+        echo "==> NORMAL HOOK 0000: Removal failed, will try dpkg --force" | tee /dev/stderr
+        dpkg --purge --force-depends systemd-sysv systemd 2>&1 | tee /dev/stderr || true
+    }
+
+    echo "==> NORMAL HOOK 0000: systemd removed" | tee /dev/stderr
+else
+    echo "==> NORMAL HOOK 0000: systemd-sysv not installed, good" | tee /dev/stderr
+fi
+
+echo "==> NORMAL HOOK 0000: Complete" | tee /dev/stderr
