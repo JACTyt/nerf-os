@@ -1,0 +1,32 @@
+#!/bin/bash
+# CRITICAL: Block systemd packages BEFORE any package installation
+# This hook runs at the start of the chroot stage, before package lists are processed.
+# Without this, systemd-sysv gets installed as part of the base system.
+
+set -euo pipefail
+
+echo "==> Blocking systemd packages via apt preferences"
+
+mkdir -p /etc/apt/preferences.d
+cat > /etc/apt/preferences.d/no-systemd << 'PREF'
+# NerfOS uses runit as PID 1 — block systemd from being installed
+Package: systemd
+Pin: release *
+Pin-Priority: -1
+
+Package: systemd-sysv
+Pin: release *
+Pin-Priority: -1
+
+Package: live-config-systemd
+Pin: release *
+Pin-Priority: -1
+PREF
+
+# Also explicitly remove systemd-sysv if it somehow got installed
+if dpkg -l | grep -q '^ii  systemd-sysv'; then
+    echo "==> Removing systemd-sysv that was installed by base system"
+    apt-get remove -y --purge systemd-sysv systemd || true
+fi
+
+echo "==> Apt preferences created, systemd blocked"

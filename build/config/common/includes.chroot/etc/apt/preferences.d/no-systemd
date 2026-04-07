@@ -1,0 +1,15 @@
+# NerfOS uses runit as PID 1 — block systemd from being installed.
+# This file is placed in the chroot before package installation by
+# lb chroot_includes_before_packages, so it takes effect during dependency resolution.
+
+Package: systemd
+Pin: release *
+Pin-Priority: -1
+
+Package: systemd-sysv
+Pin: release *
+Pin-Priority: -1
+
+Package: live-config-systemd
+Pin: release *
+Pin-Priority: -1
