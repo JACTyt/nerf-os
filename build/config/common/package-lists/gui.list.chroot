@@ -35,7 +35,7 @@ network-manager-gnome
 
 # Browsers
 firefox-esr
-midori
+netsurf-gtk
 
 # GTK theme (minimal)
 gtk2-engines-murrine
