@@ -3,6 +3,10 @@
 
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
+APT::Get::Assume-Yes "true";
+APT::Get::Fix-Broken "true";
+DPkg::Options:: "--force-confdef";
+DPkg::Options:: "--force-confold";
 
 // Pin systemd packages to negative priority so they're never installed
 Package: systemd;
