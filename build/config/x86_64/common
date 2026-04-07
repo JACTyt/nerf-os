@@ -1,2 +1,1 @@
 LB_ARCHITECTURE="amd64"
-LB_LINUX_PACKAGES="linux-image-amd64 linux-headers-amd64"
