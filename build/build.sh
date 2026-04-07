@@ -63,13 +63,20 @@ lb config \
   --debian-installer none \
   --memtest none \
   --bootappend-live "boot=live quiet splash" \
-  --iso-volume "NerfOS-$VERSION" \
-  --image-name "nerf-os-$VERSION-$ARCH"
+  --iso-volume "NerfOS-$VERSION"
 
 echo "==> Running lb build (this takes 15-30 minutes)..."
 lb build
 
-ISO="nerf-os-$VERSION-$ARCH.iso"
-cp "$WORK_DIR/$ISO" "$OUTPUT/$ISO"
-echo "==> Done: $OUTPUT/$ISO"
-ls -lh "$OUTPUT/$ISO"
+# live-build names the output live-image-ARCH.hybrid.iso
+LB_ISO=$(find "$WORK_DIR" -maxdepth 1 -name "*.iso" | head -1)
+if [ -z "$LB_ISO" ]; then
+  echo "Error: no ISO found in $WORK_DIR after build"
+  ls -la "$WORK_DIR"
+  exit 1
+fi
+
+ISO_OUT="$OUTPUT/nerf-os-$VERSION-$ARCH.iso"
+cp "$LB_ISO" "$ISO_OUT"
+echo "==> Done: $ISO_OUT"
+ls -lh "$ISO_OUT"
