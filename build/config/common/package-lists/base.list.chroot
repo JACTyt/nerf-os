@@ -1,9 +1,9 @@
 # Base packages — installed in all modes
-# Init and session
+# Init and session (runit-init installed via hook after systemd removal)
 runit
-runit-init
 elogind
 libpam-elogind
+live-config-sysvinit
 
 # Network
 network-manager
