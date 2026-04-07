@@ -1,0 +1,292 @@
+#!/bin/bash
+# nerf-install — NerfOS CLI installer
+# Copies the live system to a target disk and installs GRUB.
+
+set -euo pipefail
+
+VERSION="1.0"
+
+# --- Pure functions (testable) ---
+
+detect_firmware_mode() {
+  local efivars_path="${1:-/sys/firmware/efi/efivars}"
+  if [ -d "$efivars_path" ]; then echo "uefi"; else echo "bios"; fi
+}
+
+calc_swap_partition_gb() {
+  local ram_mb="$1"
+  if [ "$ram_mb" -lt 4096 ]; then echo "2"; else echo "0"; fi
+}
+
+validate_disk_input() {
+  local disk="$1"
+  if [ -z "$disk" ]; then
+    echo "Error: no disk specified."
+    return 1
+  fi
+  if [ ! -b "$disk" ] && [ -z "${NERF_INSTALL_TEST_MODE:-}" ]; then
+    echo "Error: $disk is not a block device."
+    return 1
+  fi
+  return 0
+}
+
+# --- UI helpers ---
+
+banner() {
+  clear
+  cat << 'EOF'
+
+     _   _           __ ___  ____
+    | \ | | ___ _ __|  _  / ___/ ___|
+    |  \| |/ _ \ '__| |_) | |  \___ \
+    | |\  |  __/ |  |  __/| |___ ___) |
+    |_| \_|\___|_|  |_|    \____|____/
+
+    NerfOS Installer v1.0
+    ─────────────────────────────────
+
+EOF
+}
+
+confirm() {
+  local msg="$1"
+  local answer
+  read -rp "$msg [yes/no]: " answer
+  [ "$answer" = "yes" ]
+}
+
+# --- Installation steps ---
+
+step_select_disk() {
+  echo ""
+  echo "Available disks:"
+  echo ""
+  lsblk -d -o NAME,SIZE,MODEL --nodeps | grep -v "loop\|sr"
+  echo ""
+  read -rp "Enter target disk (e.g. /dev/sda): " TARGET_DISK
+  validate_disk_input "$TARGET_DISK"
+
+  echo ""
+  echo "WARNING: ALL DATA on $TARGET_DISK will be PERMANENTLY ERASED."
+  echo ""
+  if ! confirm "Are you sure you want to install NerfOS on $TARGET_DISK?"; then
+    echo "Installation cancelled."
+    exit 0
+  fi
+}
+
+step_partition_disk() {
+  local disk="$1"
+  local firmware="$2"
+  local swap_gb="$3"
+
+  echo ""
+  echo "==> Partitioning $disk ($firmware mode, swap=${swap_gb}GB)..."
+
+  wipefs -a "$disk"
+
+  if [ "$firmware" = "uefi" ]; then
+    # GPT: EFI (512MB) + swap (optional) + root (remaining)
+    parted -s "$disk" mklabel gpt
+    parted -s "$disk" mkpart EFI fat32 1MiB 513MiB
+    parted -s "$disk" set 1 esp on
+    if [ "$swap_gb" -gt 0 ]; then
+      parted -s "$disk" mkpart swap linux-swap 513MiB "$((513 + swap_gb * 1024))MiB"
+      parted -s "$disk" mkpart root ext4 "$((513 + swap_gb * 1024))MiB" 100%
+      EFI_PART="${disk}1"
+      SWAP_PART="${disk}2"
+      ROOT_PART="${disk}3"
+    else
+      parted -s "$disk" mkpart root ext4 513MiB 100%
+      EFI_PART="${disk}1"
+      SWAP_PART=""
+      ROOT_PART="${disk}2"
+    fi
+  else
+    # MBR: swap (optional) + root (remaining)
+    parted -s "$disk" mklabel msdos
+    if [ "$swap_gb" -gt 0 ]; then
+      parted -s "$disk" mkpart primary linux-swap 1MiB "$((1 + swap_gb * 1024))MiB"
+      parted -s "$disk" mkpart primary ext4 "$((1 + swap_gb * 1024))MiB" 100%
+      parted -s "$disk" set 2 boot on
+      SWAP_PART="${disk}1"
+      ROOT_PART="${disk}2"
+      EFI_PART=""
+    else
+      parted -s "$disk" mkpart primary ext4 1MiB 100%
+      parted -s "$disk" set 1 boot on
+      ROOT_PART="${disk}1"
+      SWAP_PART=""
+      EFI_PART=""
+    fi
+  fi
+
+  echo "    root: $ROOT_PART"
+  [ -n "${SWAP_PART:-}" ] && echo "    swap: $SWAP_PART"
+  [ -n "${EFI_PART:-}" ]  && echo "    efi:  $EFI_PART"
+}
+
+step_format() {
+  echo "==> Formatting partitions..."
+  mkfs.ext4 -F -L nerfo-root "$ROOT_PART"
+  [ -n "${SWAP_PART:-}" ] && mkswap -L nerfo-swap "$SWAP_PART"
+  [ -n "${EFI_PART:-}"  ] && mkfs.vfat -F32 "$EFI_PART"
+}
+
+step_copy_system() {
+  echo "==> Copying live system to $ROOT_PART (this takes 5-15 minutes)..."
+  mount "$ROOT_PART" /mnt
+  [ -n "${EFI_PART:-}" ] && { mkdir -p /mnt/boot/efi; mount "$EFI_PART" /mnt/boot/efi; }
+
+  rsync -aAX --progress \
+    --exclude='/proc/*' \
+    --exclude='/sys/*' \
+    --exclude='/dev/*' \
+    --exclude='/run/*' \
+    --exclude='/tmp/*' \
+    --exclude='/mnt/*' \
+    --exclude='/media/*' \
+    --exclude='/live' \
+    / /mnt/
+
+  mkdir -p /mnt/{proc,sys,dev,run,tmp,mnt,media}
+}
+
+step_generate_fstab() {
+  echo "==> Generating /etc/fstab..."
+  ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
+  cat > /mnt/etc/fstab << EOF
+# NerfOS fstab
+UUID=$ROOT_UUID  /     ext4  defaults,noatime  0 1
+EOF
+  if [ -n "${SWAP_PART:-}" ]; then
+    SWAP_UUID=$(blkid -s UUID -o value "$SWAP_PART")
+    echo "UUID=$SWAP_UUID  none  swap  sw  0 0" >> /mnt/etc/fstab
+  fi
+  if [ -n "${EFI_PART:-}" ]; then
+    EFI_UUID=$(blkid -s UUID -o value "$EFI_PART")
+    echo "UUID=$EFI_UUID  /boot/efi  vfat  umask=0077  0 1" >> /mnt/etc/fstab
+  fi
+}
+
+step_setup_user() {
+  echo ""
+  read -rp "Username: " USERNAME
+  while true; do
+    read -rsp "Password: " PASSWORD; echo
+    read -rsp "Confirm password: " PASSWORD2; echo
+    [ "$PASSWORD" = "$PASSWORD2" ] && break
+    echo "Passwords do not match. Try again."
+  done
+  read -rp "Hostname [nerfo]: " HOSTNAME
+  HOSTNAME="${HOSTNAME:-nerfo}"
+
+  echo "$HOSTNAME" > /mnt/etc/hostname
+  cat > /mnt/etc/hosts << EOF
+127.0.0.1   localhost
+127.0.1.1   $HOSTNAME
+EOF
+
+  # Create user in chroot
+  chroot /mnt useradd -m -s /bin/bash -G audio,video,netdev,sudo "$USERNAME"
+  echo "$USERNAME:$PASSWORD" | chroot /mnt chpasswd
+
+  # Remove live user
+  chroot /mnt userdel -r user 2>/dev/null || true
+}
+
+step_select_boot_mode() {
+  echo ""
+  echo "Default boot mode:"
+  echo "  1) GUI (Openbox desktop)"
+  echo "  2) Terminal (CLI only)"
+  read -rp "Choice [1]: " BOOT_MODE_CHOICE
+  BOOT_MODE_CHOICE="${BOOT_MODE_CHOICE:-1}"
+  if [ "$BOOT_MODE_CHOICE" = "2" ]; then
+    BOOT_MODE="terminal"
+  else
+    BOOT_MODE="gui"
+  fi
+}
+
+step_install_grub() {
+  local disk="$1"
+  local firmware="$2"
+
+  echo "==> Installing GRUB ($firmware)..."
+
+  # Bind mounts for chroot
+  mount --bind /dev  /mnt/dev
+  mount --bind /proc /mnt/proc
+  mount --bind /sys  /mnt/sys
+
+  if [ "$firmware" = "uefi" ]; then
+    chroot /mnt grub-install --target=x86_64-efi \
+      --efi-directory=/boot/efi --bootloader-id=NerfOS
+  else
+    chroot /mnt grub-install --target=i386-pc "$disk"
+  fi
+
+  # Generate grub.cfg with correct default mode
+  ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
+  cat > /mnt/etc/default/grub << EOF
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="NerfOS"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nerf.mode=$BOOT_MODE"
+GRUB_CMDLINE_LINUX=""
+EOF
+
+  chroot /mnt update-grub
+
+  # Unmount bind mounts
+  umount /mnt/dev /mnt/proc /mnt/sys
+}
+
+step_run_nerf_optim() {
+  echo "==> Running hardware optimization..."
+  chroot /mnt /usr/local/bin/nerf-optim || true
+}
+
+step_finish() {
+  # Unmount
+  [ -n "${EFI_PART:-}" ] && umount /mnt/boot/efi 2>/dev/null || true
+  umount /mnt
+
+  echo ""
+  echo "╔══════════════════════════════════╗"
+  echo "║  NerfOS installed successfully!  ║"
+  echo "║                                  ║"
+  echo "║  Remove the USB stick and reboot ║"
+  echo "╚══════════════════════════════════╝"
+  echo ""
+}
+
+# --- Main (skipped in test mode) ---
+
+if [ -z "${NERF_INSTALL_TEST_MODE:-}" ]; then
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: nerf-install must be run as root."
+    exit 1
+  fi
+
+  banner
+
+  RAM_MB=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 ))
+  FIRMWARE=$(detect_firmware_mode)
+  SWAP_GB=$(calc_swap_partition_gb "$RAM_MB")
+
+  echo "  Detected: ${RAM_MB}MB RAM, $FIRMWARE firmware"
+
+  step_select_disk
+  step_select_boot_mode
+  step_partition_disk "$TARGET_DISK" "$FIRMWARE" "$SWAP_GB"
+  step_format
+  step_copy_system
+  step_generate_fstab
+  step_setup_user
+  step_install_grub "$TARGET_DISK" "$FIRMWARE"
+  step_run_nerf_optim
+  step_finish
+fi
