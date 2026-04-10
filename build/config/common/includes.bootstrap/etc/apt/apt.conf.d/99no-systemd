@@ -1,5 +1,5 @@
-// Block systemd packages during bootstrap
-// This configuration is active during debootstrap
+// Non-interactive apt configuration for bootstrap and chroot stages
+// Systemd pin preferences are in /etc/apt/preferences.d/no-systemd (via includes.chroot)
 
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
@@ -7,12 +7,3 @@ APT::Get::Assume-Yes "true";
 APT::Get::Fix-Broken "true";
 DPkg::Options:: "--force-confdef";
 DPkg::Options:: "--force-confold";
-
-// Pin systemd packages to negative priority so they're never installed
-Package: systemd;
-Pin: release *
-Pin-Priority: -1;
-
-Package: systemd-sysv;
-Pin: release *
-Pin-Priority: -1;
