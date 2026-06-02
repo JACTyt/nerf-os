@@ -1,8 +1,7 @@
 # Base packages — installed in all modes
 # Init and session
 runit
-elogind
-libpam-elogind
+libpam-systemd
 
 # Network
 network-manager

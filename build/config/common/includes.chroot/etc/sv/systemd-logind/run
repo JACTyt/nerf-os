@@ -1,0 +1,3 @@
+#!/bin/sh
+mkdir -p /run/systemd /run/systemd/seats /run/systemd/users /run/systemd/sessions
+exec /lib/systemd/systemd-logind 2>&1
