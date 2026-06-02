@@ -85,6 +85,7 @@ jobs:
             syslinux-common
 
       - name: Build ${{ matrix.arch }} ISO
+        timeout-minutes: 60
         run: bash build/build.sh ${{ matrix.arch }}
 
       - name: Verify ISO

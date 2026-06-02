@@ -1,0 +1,5 @@
+#!/bin/sh
+# Build-time no-op: shadows /usr/bin/systemctl via PATH (/usr/local/bin has priority).
+# Prevents dpkg postinst scripts from hanging on D-Bus during package installation.
+# Removed by hook 0020-runit-setup.hook.chroot before the final system is assembled.
+exit 0

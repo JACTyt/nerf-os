@@ -3,6 +3,10 @@ set -euo pipefail
 
 echo "==> Switching init to runit"
 
+# Remove the build-time systemctl no-op that was placed in /usr/local/bin to prevent
+# dpkg postinst scripts from hanging on D-Bus during package installation.
+rm -f /usr/local/bin/systemctl
+
 # At this point live-build has installed all package lists, including live-config-systemd
 # and systemd-sysv (pulled in as deps). We now replace systemd-sysv with runit-init.
 #
