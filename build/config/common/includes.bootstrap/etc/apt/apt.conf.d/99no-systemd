@@ -1,5 +1,4 @@
-// Non-interactive apt configuration for bootstrap and chroot stages
-// Systemd pin preferences are in /etc/apt/preferences.d/no-systemd (via includes.chroot)
+// Non-interactive apt configuration for bootstrap stage
 
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";

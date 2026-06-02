@@ -1,15 +1,3 @@
-# NerfOS uses runit as PID 1.
-# This file is processed by live-build's lb chroot_apt phase,
-# BEFORE package lists are installed — so the solver never selects systemd-sysv.
-
-Package: systemd
-Pin: release *
-Pin-Priority: -1
-
-Package: systemd-sysv
-Pin: release *
-Pin-Priority: -1
-
-Package: live-config-systemd
-Pin: release *
-Pin-Priority: -1
+# NerfOS — no apt pins needed.
+# Init system is switched from systemd-sysv to runit-init via hook 0020-runit-setup.hook.chroot
+# after all packages are installed.

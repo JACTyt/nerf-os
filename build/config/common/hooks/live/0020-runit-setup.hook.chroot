@@ -1,39 +1,37 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "==> Setting up runit as PID 1"
+echo "==> Switching init to runit"
 
-# Install runit-init to replace systemd as PID 1
-apt-get install -y runit runit-init elogind libpam-elogind
+# At this point live-build has installed all package lists, including live-config-systemd
+# and systemd-sysv (pulled in as deps). We now replace systemd-sysv with runit-init.
+#
+# runit-init has Conflicts: systemd-sysv and Replaces: systemd-sysv.
+# apt resolves this by removing systemd-sysv when installing runit-init,
+# provided nothing else hard-depends on systemd-sysv at this point.
+apt-get install -y runit-init
 
-# Remove systemd init daemon if present — but NOT libsystemd0 (shared library used by dbus, udev, elogind, etc.)
-apt-get remove -y --purge systemd systemd-sysv 2>/dev/null || true
-apt-get autoremove -y 2>/dev/null || true
-
-# Ensure /sbin/init points to runit
+# Point /sbin/init at runit
 update-alternatives --set init /sbin/runit-init 2>/dev/null || true
 
-# Create runit stage directories if not present
-mkdir -p /etc/runit/1.d
-mkdir -p /etc/runit/3.d
+echo "==> runit-init installed, systemd-sysv removed"
 
-# Stage 1: system init script
+# Create runit stage directories
+mkdir -p /etc/runit/1.d /etc/runit/3.d
+
+# Stage 1: system init
 cat > /etc/runit/1 << 'EOF'
 #!/bin/bash
-# runit stage 1: system initialization
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Mount essential filesystems
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
 mount -t devpts devpts /dev/pts 2>/dev/null || true
 mount -t tmpfs tmpfs /run
 
-# Set hostname
 hostname -F /etc/hostname 2>/dev/null || true
 
-# Run stage 1.d scripts
 for script in /etc/runit/1.d/*; do
   [ -x "$script" ] && "$script"
 done
@@ -43,13 +41,10 @@ chmod +x /etc/runit/1
 # Stage 2: service supervision
 cat > /etc/runit/2 << 'EOF'
 #!/bin/bash
-# runit stage 2: start services
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Detect boot mode from kernel cmdline
 /etc/runit/core-services
 
-# Start runsv for active services
 exec /sbin/runsvdir -P /etc/runit/runsvdir/default
 EOF
 chmod +x /etc/runit/2
@@ -57,11 +52,10 @@ chmod +x /etc/runit/2
 # Stage 3: shutdown
 cat > /etc/runit/3 << 'EOF'
 #!/bin/bash
-# runit stage 3: shutdown
 for script in /etc/runit/3.d/*; do
   [ -x "$script" ] && "$script"
 done
 EOF
 chmod +x /etc/runit/3
 
-echo "==> runit setup complete"
+echo "==> runit stages written"

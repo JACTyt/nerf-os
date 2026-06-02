@@ -71,7 +71,6 @@ lb config \
   --mirror-chroot-security "http://security.debian.org/debian-security/" \
   --mirror-binary "http://deb.debian.org/debian/" \
   --mirror-binary-security "http://security.debian.org/debian-security/" \
-  --debootstrap-options "--exclude=systemd,systemd-sysv" \
   --apt-options "-o APT::Install-Recommends=false -o APT::Get::Assume-Yes=true -o DPkg::Options::=--force-confdef -o DPkg::Options::=--force-confold" \
   --debian-installer none \
   --memtest none \
