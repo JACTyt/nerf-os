@@ -6,8 +6,8 @@ echo "==> Setting up runit as PID 1"
 # Install runit-init to replace systemd as PID 1
 apt-get install -y runit runit-init elogind libpam-elogind
 
-# Remove systemd if present (live-build minimal may not have it, but ensure clean)
-apt-get remove -y --purge systemd systemd-sysv libsystemd0 2>/dev/null || true
+# Remove systemd init daemon if present — but NOT libsystemd0 (shared library used by dbus, udev, elogind, etc.)
+apt-get remove -y --purge systemd systemd-sysv 2>/dev/null || true
 apt-get autoremove -y 2>/dev/null || true
 
 # Ensure /sbin/init points to runit

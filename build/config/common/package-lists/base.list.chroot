@@ -2,6 +2,7 @@
 # Init and session
 runit
 runit-init
+live-config-sysvinit
 elogind
 libpam-elogind
 
